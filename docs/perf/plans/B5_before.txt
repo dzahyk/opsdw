@@ -1,0 +1,40 @@
+-- 24-month GMV / completion trend for all cities (dashboard landing view) (before)
+-- SELECT d.year_month, count(*), count(*) FILTER (WHERE f.is_delivered), sum(f.gmv) FROM perf.fact_orders_noidx f JOIN core.dim_date d ON d.date_key = f.created_date_key GROUP BY d.year_month ORDER BY 1
+
+Finalize GroupAggregate (actual time=71.600..73.874 rows=24.00 loops=1)
+  Group Key: d.year_month
+  Buffers: shared hit=23416 read=388
+  I/O Timings: shared read=0.170
+  ->  Gather Merge (actual time=71.596..73.847 rows=72.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=23416 read=388
+        I/O Timings: shared read=0.170
+        ->  Sort (actual time=70.250..70.252 rows=24.00 loops=3)
+              Sort Key: d.year_month
+              Sort Method: quicksort  Memory: 27kB
+              Buffers: shared hit=23416 read=388
+              I/O Timings: shared read=0.170
+              Worker 0:  Sort Method: quicksort  Memory: 27kB
+              Worker 1:  Sort Method: quicksort  Memory: 27kB
+              ->  Partial HashAggregate (actual time=70.226..70.230 rows=24.00 loops=3)
+                    Group Key: d.year_month
+                    Batches: 1  Memory Usage: 32kB
+                    Buffers: shared hit=23398 read=388
+                    I/O Timings: shared read=0.170
+                    Worker 0:  Batches: 1  Memory Usage: 32kB
+                    Worker 1:  Batches: 1  Memory Usage: 32kB
+                    ->  Hash Join (actual time=0.210..44.884 rows=266649.00 loops=3)
+                          Hash Cond: (f.created_date_key = d.date_key)
+                          Buffers: shared hit=23398 read=388
+                          I/O Timings: shared read=0.170
+                          ->  Parallel Seq Scan on fact_orders_noidx f (actual time=0.030..10.682 rows=266649.00 loops=3)
+                                Buffers: shared hit=23356 read=388
+                                I/O Timings: shared read=0.170
+                          ->  Hash (actual time=0.174..0.175 rows=1461.00 loops=3)
+                                Buckets: 2048  Batches: 1  Memory Usage: 79kB
+                                Buffers: shared hit=42
+                                ->  Seq Scan on dim_date d (actual time=0.005..0.080 rows=1461.00 loops=3)
+                                      Buffers: shared hit=42
+Planning Time: 0.063 ms
+Execution Time: 73.919 ms

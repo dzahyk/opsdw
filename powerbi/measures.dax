@@ -1,0 +1,28 @@
+// DAX measures for the Power BI semantic model (home table: fact_orders).
+// Generated to match kpis/kpis.yml one-to-one. NOT executed here: Power BI Desktop
+// (Windows-only) was not available on the build machine (macOS). Each measure has a
+// SQL translation (kpis.yml: semantic_sql) that IS executed and reconciled against
+// the canonical SQL; see docs/RECONCILIATION.md.
+// Relationships the measures rely on: see powerbi/MODEL.md.
+
+Orders Created = COUNTROWS ( fact_orders )
+
+Delivered Orders = CALCULATE ( COUNTROWS ( fact_orders ), fact_orders[is_delivered] = 1 )
+
+GMV = SUM ( fact_orders[gmv] )
+
+Completion Rate = DIVIDE ( [Delivered Orders], [Orders Created] )
+
+Cancellation Rate = DIVIDE ( CALCULATE ( COUNTROWS ( fact_orders ), fact_orders[is_cancelled] = 1 ), [Orders Created] )
+
+On-time Rate = DIVIDE ( CALCULATE ( COUNTROWS ( fact_orders ), fact_orders[is_on_time] = 1 ), [Delivered Orders] )
+
+AOV = DIVIDE ( [GMV], [Delivered Orders] )
+
+Commission Revenue = SUM ( fact_orders[commission_amount] )
+
+Take Rate = DIVIDE ( [Commission Revenue], [GMV] )
+
+P90 Delivery Minutes = CALCULATE ( PERCENTILE.INC ( fact_orders[delivery_minutes], 0.9 ), fact_orders[is_delivered] = 1 )
+
+Monthly Active Customers = CALCULATE ( DISTINCTCOUNT ( fact_orders[customer_key] ), fact_orders[is_delivered] = 1 )

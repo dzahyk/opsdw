@@ -1,0 +1,186 @@
+-- One courier's active days in a quarter (gaps-and-islands input) (after)
+-- SELECT DISTINCT event_date_key FROM core.fact_order_events WHERE courier_key = 10 AND event_date_key BETWEEN 20250701 AND 20250930
+
+HashAggregate (actual time=0.200..0.206 rows=55.00 loops=1)
+  Group Key: fact_order_events.event_date_key
+  Batches: 1  Memory Usage: 48kB
+  Buffers: shared hit=52
+  ->  Append (actual time=0.070..0.166 rows=681.00 loops=1)
+        Buffers: shared hit=52
+        ->  Seq Scan on fact_order_events_202301 fact_order_events_1 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202302 fact_order_events_2 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202303 fact_order_events_3 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202304 fact_order_events_4 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202305 fact_order_events_5 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202306 fact_order_events_6 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202307 fact_order_events_7 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202308 fact_order_events_8 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202309 fact_order_events_9 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202310 fact_order_events_10 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202311 fact_order_events_11 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202312 fact_order_events_12 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Index Only Scan using fact_order_events_202401_courier_key_event_date_key_idx on fact_order_events_202401 fact_order_events_13 (actual time=0.005..0.005 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202402_courier_key_event_date_key_idx on fact_order_events_202402 fact_order_events_14 (actual time=0.003..0.003 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202403_courier_key_event_date_key_idx on fact_order_events_202403 fact_order_events_15 (actual time=0.003..0.003 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202404_courier_key_event_date_key_idx on fact_order_events_202404 fact_order_events_16 (actual time=0.004..0.004 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202405_courier_key_event_date_key_idx on fact_order_events_202405 fact_order_events_17 (actual time=0.003..0.003 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202406_courier_key_event_date_key_idx on fact_order_events_202406 fact_order_events_18 (actual time=0.003..0.003 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202407_courier_key_event_date_key_idx on fact_order_events_202407 fact_order_events_19 (actual time=0.003..0.003 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202408_courier_key_event_date_key_idx on fact_order_events_202408 fact_order_events_20 (actual time=0.003..0.003 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202409_courier_key_event_date_key_idx on fact_order_events_202409 fact_order_events_21 (actual time=0.003..0.003 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202410_courier_key_event_date_key_idx on fact_order_events_202410 fact_order_events_22 (actual time=0.004..0.004 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202411_courier_key_event_date_key_idx on fact_order_events_202411 fact_order_events_23 (actual time=0.003..0.003 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202412_courier_key_event_date_key_idx on fact_order_events_202412 fact_order_events_24 (actual time=0.002..0.002 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202501_courier_key_event_date_key_idx on fact_order_events_202501 fact_order_events_25 (actual time=0.004..0.004 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202502_courier_key_event_date_key_idx on fact_order_events_202502 fact_order_events_26 (actual time=0.003..0.003 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202503_courier_key_event_date_key_idx on fact_order_events_202503 fact_order_events_27 (actual time=0.003..0.003 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202504_courier_key_event_date_key_idx on fact_order_events_202504 fact_order_events_28 (actual time=0.003..0.003 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202505_courier_key_event_date_key_idx on fact_order_events_202505 fact_order_events_29 (actual time=0.002..0.002 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202506_courier_key_event_date_key_idx on fact_order_events_202506 fact_order_events_30 (actual time=0.003..0.003 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202507_courier_key_event_date_key_idx on fact_order_events_202507 fact_order_events_31 (actual time=0.004..0.012 rows=220.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=3
+        ->  Index Only Scan using fact_order_events_202508_courier_key_event_date_key_idx on fact_order_events_202508 fact_order_events_32 (actual time=0.005..0.015 rows=267.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=3
+        ->  Index Only Scan using fact_order_events_202509_courier_key_event_date_key_idx on fact_order_events_202509 fact_order_events_33 (actual time=0.004..0.012 rows=194.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=3
+        ->  Index Only Scan using fact_order_events_202510_courier_key_event_date_key_idx on fact_order_events_202510 fact_order_events_34 (actual time=0.013..0.013 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202511_courier_key_event_date_key_idx on fact_order_events_202511 fact_order_events_35 (actual time=0.004..0.004 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202512_courier_key_event_date_key_idx on fact_order_events_202512 fact_order_events_36 (actual time=0.003..0.003 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=2
+        ->  Index Only Scan using fact_order_events_202601_courier_key_event_date_key_idx on fact_order_events_202601 fact_order_events_37 (actual time=0.003..0.003 rows=0.00 loops=1)
+              Index Cond: ((courier_key = 10) AND (event_date_key >= 20250701) AND (event_date_key <= 20250930))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=1
+        ->  Seq Scan on fact_order_events_202602 fact_order_events_38 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202603 fact_order_events_39 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202604 fact_order_events_40 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202605 fact_order_events_41 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202606 fact_order_events_42 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202607 fact_order_events_43 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202608 fact_order_events_44 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202609 fact_order_events_45 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202610 fact_order_events_46 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202611 fact_order_events_47 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_202612 fact_order_events_48 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+        ->  Seq Scan on fact_order_events_default fact_order_events_49 (actual time=0.001..0.001 rows=0.00 loops=1)
+              Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+Planning:
+  Buffers: shared hit=72
+Planning Time: 0.427 ms
+Execution Time: 0.315 ms

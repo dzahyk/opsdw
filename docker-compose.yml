@@ -1,0 +1,40 @@
+# Local-only warehouse. Host port 55462 is deliberately offset: 55432/55442 are
+# used by other local stacks on this machine. Override with OPSDW_PG_PORT.
+name: opsdw
+services:
+  postgres:
+    image: postgres:18-alpine
+    # Parallel query allocates dynamic shared memory in /dev/shm; Docker's 64 MB default
+    # fails at bench volume ("could not resize shared memory segment").
+    shm_size: 1g
+    environment:
+      POSTGRES_USER: opsdw
+      POSTGRES_PASSWORD: opsdw_local_only   # local dev credential, not a secret
+      POSTGRES_DB: opsdw
+      TZ: Asia/Jakarta
+      PGTZ: Asia/Jakarta
+    command:
+      - postgres
+      - -c
+      - timezone=Asia/Jakarta
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - work_mem=32MB
+      - -c
+      - maintenance_work_mem=256MB
+      - -c
+      - max_wal_size=4GB
+      - -c
+      - track_io_timing=on
+    ports:
+      - "127.0.0.1:${OPSDW_PG_PORT:-55462}:5432"
+    volumes:
+      - opsdw_pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U opsdw -d opsdw"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+volumes:
+  opsdw_pgdata:

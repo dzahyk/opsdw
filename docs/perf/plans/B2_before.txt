@@ -1,0 +1,25 @@
+-- Customer order history, latest 20 orders (customer 360 / support lookup) (before)
+-- SELECT order_id, created_at, order_status, gmv FROM perf.fact_orders_noidx WHERE customer_key = 14705 ORDER BY created_at DESC LIMIT 20
+
+Limit (actual time=31.276..32.725 rows=20.00 loops=1)
+  Buffers: shared hit=16476 read=7348 written=864
+  I/O Timings: shared read=0.772 write=2.054
+  ->  Gather Merge (actual time=31.276..32.723 rows=20.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=16476 read=7348 written=864
+        I/O Timings: shared read=0.772 write=2.054
+        ->  Sort (actual time=29.451..29.453 rows=16.33 loops=3)
+              Sort Key: created_at DESC
+              Sort Method: top-N heapsort  Memory: 27kB
+              Buffers: shared hit=16476 read=7348 written=864
+              I/O Timings: shared read=0.772 write=2.054
+              Worker 0:  Sort Method: top-N heapsort  Memory: 27kB
+              Worker 1:  Sort Method: top-N heapsort  Memory: 27kB
+              ->  Parallel Seq Scan on fact_orders_noidx (actual time=1.547..29.376 rows=94.33 loops=3)
+                    Filter: (customer_key = 14705)
+                    Rows Removed by Filter: 266555
+                    Buffers: shared hit=16396 read=7348 written=864
+                    I/O Timings: shared read=0.772 write=2.054
+Planning Time: 0.039 ms
+Execution Time: 32.740 ms

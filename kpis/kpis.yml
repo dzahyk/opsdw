@@ -1,0 +1,145 @@
+# KPI dictionary — single source of truth. docs/KPI_DICTIONARY.md is GENERATED from this file
+# (`uv run opsdw docs`), and the reconciliation test evaluates every KPI three ways:
+#   canonical_sql  : sql/kpi/*.sql on the core star schema (the definition of record)
+#   semantic_sql   : SQL translation of the DAX measure, evaluated on the bi.* views in a
+#                    Power BI-style filter context (month from dim_date x city from dim_city)
+#   dashboard      : the value embedded in the built dashboard (dashboard/dist/index.html)
+# Defaults that apply to every KPI unless overridden:
+defaults:
+  grain: "order (one row of core.fact_orders = one order)"
+  time_window: "calendar month of order creation, Asia/Jakarta (WIB); orders are attributed to their CREATED date, not delivery date"
+  filters: "all cities unless sliced; includes every order whose header passed validation"
+  owner: "Operations BI (illustrative role — synthetic project, no real team)"
+kpis:
+  - id: K01
+    name: Orders Created
+    key: orders_created
+    business_question: "How much demand did the platform receive?"
+    numerator: "COUNT of orders"
+    denominator: null
+    unit: count
+    additive: true
+    canonical_sql: sql/kpi/k01_orders_created.sql
+    dax: "Orders Created = COUNTROWS ( fact_orders )"
+    semantic_sql: "count(*)"
+    caveats: "Counts every order regardless of outcome, including orders still in progress at month end."
+  - id: K02
+    name: Delivered Orders
+    key: delivered_orders
+    business_question: "How many orders were fulfilled?"
+    numerator: "COUNT of orders with is_delivered = true"
+    denominator: null
+    unit: count
+    additive: true
+    canonical_sql: sql/kpi/k02_delivered_orders.sql
+    dax: "Delivered Orders = CALCULATE ( COUNTROWS ( fact_orders ), fact_orders[is_delivered] = 1 )"
+    semantic_sql: "count(*) FILTER (WHERE f.is_delivered = 1)"
+    caveats: "Attributed to creation month; an order created 31 Jan 23:50 and delivered 1 Feb counts in January."
+  - id: K03
+    name: GMV
+    key: gmv
+    business_question: "What value did customers pay for fulfilled orders?"
+    numerator: "SUM(items_amount + delivery_fee - discount_amount) over delivered orders"
+    denominator: null
+    unit: IDR
+    additive: true
+    canonical_sql: sql/kpi/k03_gmv.sql
+    dax: "GMV = SUM ( fact_orders[gmv] )"
+    semantic_sql: "coalesce(sum(f.gmv), 0)"
+    caveats: "fact_orders.gmv is 0 for non-delivered orders, so a plain SUM is correct. Discounts are platform-funded in this synthetic model; refunds are not modelled."
+  - id: K04
+    name: Order Completion Rate
+    key: completion_rate
+    business_question: "What share of demand turns into a delivery?"
+    numerator: "Delivered Orders (K02)"
+    denominator: "Orders Created (K01)"
+    unit: ratio
+    additive: false
+    canonical_sql: sql/kpi/k04_completion_rate.sql
+    dax: "Completion Rate = DIVIDE ( [Delivered Orders], [Orders Created] )"
+    semantic_sql: "count(*) FILTER (WHERE f.is_delivered = 1)::numeric / nullif(count(*), 0)"
+    caveats: "The latest month is understated while orders are still in progress; recompute after the month closes."
+  - id: K05
+    name: Cancellation Rate
+    key: cancellation_rate
+    business_question: "What share of demand is lost to cancellation?"
+    numerator: "COUNT of orders with is_cancelled = true"
+    denominator: "Orders Created (K01)"
+    unit: ratio
+    additive: false
+    canonical_sql: sql/kpi/k05_cancellation_rate.sql
+    dax: "Cancellation Rate = DIVIDE ( CALCULATE ( COUNTROWS ( fact_orders ), fact_orders[is_cancelled] = 1 ), [Orders Created] )"
+    semantic_sql: "count(*) FILTER (WHERE f.is_cancelled = 1)::numeric / nullif(count(*), 0)"
+    caveats: "Completion + cancellation < 100% when orders are still in progress. Use Q10 for the stage/reason split."
+  - id: K06
+    name: On-time Delivery Rate
+    key: on_time_rate
+    business_question: "Do we keep the delivery-time promise?"
+    numerator: "COUNT of delivered orders with delivered_at <= created_at + promised_minutes"
+    denominator: "Delivered Orders (K02)"
+    unit: ratio
+    additive: false
+    canonical_sql: sql/kpi/k06_on_time_rate.sql
+    dax: "On-time Rate = DIVIDE ( CALCULATE ( COUNTROWS ( fact_orders ), fact_orders[is_on_time] = 1 ), [Delivered Orders] )"
+    semantic_sql: "count(*) FILTER (WHERE f.is_on_time = 1)::numeric / nullif(count(*) FILTER (WHERE f.is_delivered = 1), 0)"
+    caveats: "Arriving exactly at the promised minute counts as on time. Promise = 25 + 4 min/km rounded up to 5 (synthetic rule)."
+  - id: K07
+    name: Average Order Value
+    key: aov
+    business_question: "How much is a typical fulfilled order worth?"
+    numerator: "GMV (K03)"
+    denominator: "Delivered Orders (K02)"
+    unit: IDR
+    additive: false
+    canonical_sql: sql/kpi/k07_average_order_value.sql
+    dax: "AOV = DIVIDE ( [GMV], [Delivered Orders] )"
+    semantic_sql: "coalesce(sum(f.gmv), 0) / nullif(count(*) FILTER (WHERE f.is_delivered = 1), 0)"
+    caveats: "Mean, sensitive to large retail baskets; use Q06-style percentiles for a robust view."
+  - id: K08
+    name: Commission Revenue
+    key: commission_revenue
+    business_question: "How much did the platform earn from merchants?"
+    numerator: "SUM(items_amount x commission_rate of the merchant's SCD2 version valid at created_at) over delivered orders"
+    denominator: null
+    unit: IDR
+    additive: true
+    canonical_sql: sql/kpi/k08_commission_revenue.sql
+    dax: "Commission Revenue = SUM ( fact_orders[commission_amount] )"
+    semantic_sql: "coalesce(sum(f.commission_amount), 0)"
+    caveats: "Point-in-time tier (SCD2). Orders whose merchant record had not arrived yet carry 0 until re-keyed (see warn.orders_on_unknown_merchant). Delivery fees are not counted as revenue here."
+  - id: K09
+    name: Take Rate
+    key: take_rate
+    business_question: "What share of GMV does the platform keep as commission?"
+    numerator: "Commission Revenue (K08)"
+    denominator: "GMV (K03)"
+    unit: ratio
+    additive: false
+    canonical_sql: sql/kpi/k09_take_rate.sql
+    dax: "Take Rate = DIVIDE ( [Commission Revenue], [GMV] )"
+    semantic_sql: "coalesce(sum(f.commission_amount), 0) / nullif(sum(f.gmv), 0)"
+    caveats: "Commission is charged on items only, while GMV = items + delivery fee - discount, so take rate is not the tier rate: it is lower when delivery fees exceed discounts and can be higher on heavily discounted orders (per-order maximum in the bench data: 0.235 vs a 0.20 top rate)."
+  - id: K10
+    name: P90 Delivery Time
+    key: p90_delivery_minutes
+    business_question: "How slow are our slowest 10% of deliveries?"
+    numerator: "90th percentile (linear interpolation) of delivered_at - created_at in minutes, delivered orders"
+    denominator: null
+    unit: minutes
+    additive: false
+    canonical_sql: sql/kpi/k10_p90_delivery_minutes.sql
+    dax: "P90 Delivery Minutes = CALCULATE ( PERCENTILE.INC ( fact_orders[delivery_minutes], 0.9 ), fact_orders[is_delivered] = 1 )"
+    semantic_sql: "percentile_cont(0.9) WITHIN GROUP (ORDER BY f.delivery_minutes) FILTER (WHERE f.is_delivered = 1)"
+    caveats: "NON-ADDITIVE: the all-city or quarterly value must be recomputed from order rows, never averaged from city/month values. PERCENTILE.INC and percentile_cont use the same interpolation."
+  - id: K11
+    name: Monthly Active Customers
+    key: monthly_active_customers
+    business_question: "How many distinct customers received at least one delivery?"
+    numerator: "COUNT DISTINCT customer_key over delivered orders"
+    denominator: null
+    unit: count
+    additive: false
+    canonical_sql: sql/kpi/k11_monthly_active_customers.sql
+    dax: "Monthly Active Customers = CALCULATE ( DISTINCTCOUNT ( fact_orders[customer_key] ), fact_orders[is_delivered] = 1 )"
+    semantic_sql: "count(DISTINCT f.customer_key) FILTER (WHERE f.is_delivered = 1)"
+    caveats: "NON-ADDITIVE: a customer ordering in two cities counts once in 'ALL'. At year level the DAX measure returns yearly distinct customers, not a sum of months."

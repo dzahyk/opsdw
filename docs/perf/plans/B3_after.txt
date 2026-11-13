@@ -1,0 +1,17 @@
+-- Hourly delivered events in a 7-day window (ops monitoring) (after)
+-- SELECT date_trunc('hour', event_at) AS h, count(*) FROM core.fact_order_events WHERE event_type = 'delivered' AND event_at >= '2025-06-01 00:00+07' AND event_at < '2025-06-08 00:00+07' GROUP BY 1 ORDER BY 1
+
+GroupAggregate (actual time=1.026..1.667 rows=168.00 loops=1)
+  Group Key: (date_trunc('hour'::text, fact_order_events.event_at))
+  Buffers: shared hit=63
+  ->  Sort (actual time=1.024..1.253 rows=9487.00 loops=1)
+        Sort Key: (date_trunc('hour'::text, fact_order_events.event_at))
+        Sort Method: quicksort  Memory: 385kB
+        Buffers: shared hit=63
+        ->  Index Only Scan using fact_order_events_202506_event_type_event_at_idx on fact_order_events_202506 fact_order_events (actual time=0.008..0.741 rows=9487.00 loops=1)
+              Index Cond: ((event_type = 'delivered'::text) AND (event_at >= '2025-06-01 00:00:00+07'::timestamp with time zone) AND (event_at < '2025-06-08 00:00:00+07'::timestamp with time zone))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=63
+Planning Time: 0.024 ms
+Execution Time: 1.679 ms

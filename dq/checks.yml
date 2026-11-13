@@ -1,0 +1,166 @@
+# Data-quality contract. Every check is a query that returns VIOLATING rows;
+# zero rows = pass. severity=error fails the run (exit code 1), warn is reported.
+# Templates: unique, not_null, relationships, accepted_values; custom = raw SQL.
+checks:
+  # ---------------- uniqueness ----------------
+  - {type: unique, table: core.fact_orders, columns: [order_id]}
+  - {type: unique, table: core.fact_order_events, columns: [event_id],
+     why: "PK is (event_id, event_at) because of partitioning, so event_id uniqueness is NOT enforced by the database"}
+  - {type: unique, table: core.dim_customer, columns: [customer_id]}
+  - {type: unique, table: core.dim_courier, columns: [courier_id]}
+  - {type: unique, table: core.dim_merchant, columns: [merchant_id, version_no]}
+  - {type: unique, table: mart.city_daily, columns: [date_key, city_key]}
+  # ---------------- not null ----------------
+  - {type: not_null, table: core.fact_orders,
+     columns: [customer_key, merchant_key, courier_key, city_key, created_date_key, created_at, order_status, gmv, commission_amount]}
+  - {type: not_null, table: core.fact_order_events, columns: [order_id, event_type, event_at, event_date_key]}
+  - {type: not_null, table: core.dim_merchant, columns: [commission_tier, commission_rate], where: "merchant_key > 0"}
+  # ---------------- referential integrity ----------------
+  - {type: relationships, table: core.fact_orders, column: customer_key, to: core.dim_customer, field: customer_key}
+  - {type: relationships, table: core.fact_orders, column: merchant_key, to: core.dim_merchant, field: merchant_key}
+  - {type: relationships, table: core.fact_orders, column: courier_key, to: core.dim_courier, field: courier_key}
+  - {type: relationships, table: core.fact_orders, column: city_key, to: core.dim_city, field: city_key}
+  - {type: relationships, table: core.fact_orders, column: created_date_key, to: core.dim_date, field: date_key}
+  - {type: relationships, table: core.fact_order_events, column: order_id, to: core.fact_orders, field: order_id}
+  - {type: relationships, table: core.fact_order_events, column: courier_key, to: core.dim_courier, field: courier_key}
+  - {type: relationships, table: core.fact_order_events, column: event_date_key, to: core.dim_date, field: date_key}
+  - {type: relationships, table: mart.city_daily, column: city_key, to: core.dim_city, field: city_key}
+  # ---------------- accepted values ----------------
+  - {type: accepted_values, table: core.fact_orders, column: order_status,
+     values: [created, assigned, picked_up, delivered, cancelled]}
+  - {type: accepted_values, table: core.fact_orders, column: cancel_stage,
+     values: [before_assignment, after_assignment, after_pickup]}
+  - {type: accepted_values, table: core.fact_orders, column: payment_method, values: [cash, ewallet, card, paylater]}
+  - {type: accepted_values, table: core.fact_order_events, column: event_type,
+     values: [created, assigned, picked_up, delivered, cancelled, rated]}
+  - {type: accepted_values, table: core.dim_merchant, column: commission_tier, values: [bronze, silver, gold]}
+  # ---------------- business rules ----------------
+  - name: fact_orders.milestones_in_order
+    sql: |
+      SELECT order_id FROM core.fact_orders
+      WHERE assigned_at < created_at OR picked_up_at < assigned_at OR delivered_at < picked_up_at
+         OR (delivered_at IS NOT NULL AND picked_up_at IS NULL)
+  - name: fact_orders.status_flags_consistent
+    sql: |
+      SELECT order_id FROM core.fact_orders
+      WHERE (is_delivered AND is_cancelled)
+         OR is_delivered <> (order_status = 'delivered') OR is_cancelled <> (order_status = 'cancelled')
+         OR (is_cancelled AND cancel_stage IS NULL) OR (NOT is_cancelled AND cancel_stage IS NOT NULL)
+         OR (is_on_time IS NULL) <> (NOT is_delivered)
+  - name: fact_orders.gmv_formula
+    sql: |
+      SELECT order_id FROM core.fact_orders
+      WHERE gmv <> CASE WHEN is_delivered THEN items_amount + delivery_fee - discount_amount ELSE 0 END
+         OR gmv < 0 OR commission_amount < 0 OR commission_amount > items_amount
+  - name: fact_orders.commission_uses_point_in_time_tier
+    why: "commission must use the SCD2 version valid at created_at, never the current tier"
+    sql: |
+      SELECT f.order_id FROM core.fact_orders f
+      JOIN core.dim_merchant m ON m.merchant_key = f.merchant_key
+      WHERE f.merchant_key > 0
+        AND (NOT (f.created_at >= m.valid_from AND f.created_at < m.valid_to)
+             OR f.commission_rate IS DISTINCT FROM m.commission_rate
+             OR (f.is_delivered AND f.commission_amount <> round(f.items_amount * m.commission_rate, 2)))
+  - name: dim_merchant.scd2_one_current_version
+    sql: |
+      SELECT merchant_id FROM core.dim_merchant GROUP BY merchant_id HAVING count(*) FILTER (WHERE is_current) <> 1
+  - name: dim_merchant.scd2_contiguous_history
+    why: "versions must tile (-infinity, infinity) with no gaps; overlaps are already blocked by an EXCLUDE constraint"
+    sql: |
+      SELECT merchant_id FROM (
+        SELECT merchant_id, valid_from, valid_to, version_no,
+               lag(valid_to) OVER (PARTITION BY merchant_id ORDER BY valid_from) AS prev_to,
+               lead(valid_from) OVER (PARTITION BY merchant_id ORDER BY valid_from) AS next_from
+        FROM core.dim_merchant) v
+      WHERE (prev_to IS NULL AND valid_from <> '-infinity') OR (prev_to IS NOT NULL AND prev_to <> valid_from)
+         OR (next_from IS NULL AND valid_to <> 'infinity')
+  - name: fact_order_events.default_partition_empty
+    why: "rows in the DEFAULT partition mean timestamps outside the planned range (bad clock or missing partition)"
+    sql: SELECT event_id FROM core.fact_order_events_default
+  # ---------------- freshness ----------------
+  - name: freshness.source_landed_within_26h
+    type: freshness
+    why: "wall-clock: the newest raw row must have been ingested in the last 26 hours (daily batches + 2h slack)"
+    sql: |
+      SELECT src, last_ingested FROM (
+        SELECT 'orders' AS src, max(_ingested_at) AS last_ingested FROM raw.orders
+        UNION ALL SELECT 'order_events', max(_ingested_at) FROM raw.order_events) s
+      WHERE last_ingested IS NULL OR last_ingested < now() - interval '26 hours'
+  - name: freshness.models_caught_up_with_raw
+    type: freshness
+    why: "every raw row has been processed by the transform (watermark == max raw _ingest_id)"
+    sql: |
+      SELECT w.source FROM meta.watermarks w
+      JOIN (SELECT 'customers' s, max(_ingest_id) m FROM raw.customers
+            UNION ALL SELECT 'merchants', max(_ingest_id) FROM raw.merchants
+            UNION ALL SELECT 'couriers', max(_ingest_id) FROM raw.couriers
+            UNION ALL SELECT 'orders', max(_ingest_id) FROM raw.orders
+            UNION ALL SELECT 'order_events', max(_ingest_id) FROM raw.order_events) r ON r.s = w.source
+      WHERE w.last_ingest_id <> coalesce(r.m, 0)
+  - name: freshness.latest_order_in_fact
+    type: freshness
+    sql: |
+      SELECT 1 WHERE (SELECT max(created_at) FROM staging.orders) IS DISTINCT FROM (SELECT max(created_at) FROM core.fact_orders)
+  # ---------------- row-count reconciliation between layers ----------------
+  - name: reconcile.raw_orders_accounted_for
+    type: reconciliation
+    why: "every processed raw order row is either quarantined or its key exists in staging"
+    sql: |
+      SELECT r._ingest_id FROM raw.orders r
+      WHERE r._ingest_id <= (SELECT last_ingest_id FROM meta.watermarks WHERE source = 'orders')
+        AND NOT EXISTS (SELECT 1 FROM staging.rejected_rows q WHERE q.source = 'orders' AND q._ingest_id = r._ingest_id)
+        AND NOT EXISTS (SELECT 1 FROM staging.orders s WHERE s.order_id = trim(r.order_id))
+  - name: reconcile.raw_events_accounted_for
+    type: reconciliation
+    sql: |
+      SELECT r._ingest_id FROM raw.order_events r
+      WHERE r._ingest_id <= (SELECT last_ingest_id FROM meta.watermarks WHERE source = 'order_events')
+        AND NOT EXISTS (SELECT 1 FROM staging.rejected_rows q WHERE q.source = 'order_events' AND q._ingest_id = r._ingest_id)
+        AND NOT EXISTS (SELECT 1 FROM staging.order_events s WHERE s.event_id = trim(r.event_id))
+  - name: reconcile.raw_distinct_valid_orders_eq_staging
+    type: reconciliation
+    sql: |
+      SELECT a, b FROM (
+        SELECT (SELECT count(DISTINCT trim(order_id)) FROM raw.orders r
+                WHERE NOT EXISTS (SELECT 1 FROM staging.rejected_rows q WHERE q.source = 'orders' AND q._ingest_id = r._ingest_id)) AS a,
+               (SELECT count(*) FROM staging.orders) AS b) x
+      WHERE a <> b
+  - name: reconcile.staging_orders_eq_fact_orders
+    type: reconciliation
+    sql: SELECT 1 WHERE (SELECT count(*) FROM staging.orders) <> (SELECT count(*) FROM core.fact_orders)
+  - name: reconcile.staging_events_eq_fact_events
+    type: reconciliation
+    why: "events of known orders must all be in the fact (events of unknown orders wait in staging)"
+    sql: |
+      SELECT 1 WHERE (SELECT count(*) FROM staging.order_events e WHERE EXISTS (SELECT 1 FROM staging.orders o WHERE o.order_id = e.order_id))
+                  <> (SELECT count(*) FROM core.fact_order_events)
+  - name: reconcile.fact_orders_eq_mart
+    type: reconciliation
+    sql: |
+      SELECT * FROM (
+        SELECT count(*) AS n, count(*) FILTER (WHERE is_delivered) AS d, sum(gmv) AS g, sum(commission_amount) AS c
+        FROM core.fact_orders) f,
+      (SELECT sum(orders_created) AS n, sum(orders_delivered) AS d, sum(gmv) AS g, sum(commission_amount) AS c FROM mart.city_daily) m
+      WHERE (f.n, f.d, f.g, f.c) IS DISTINCT FROM (m.n, m.d, m.g, m.c)
+  - name: reconcile.staging_gmv_eq_fact_gmv
+    type: reconciliation
+    why: "GMV recomputed straight from staging (independent of the fact build) must match the fact"
+    sql: |
+      SELECT 1 WHERE (
+        SELECT coalesce(sum(o.items_amount + o.delivery_fee - o.discount_amount), 0) FROM staging.orders o
+        WHERE EXISTS (SELECT 1 FROM staging.order_events e WHERE e.order_id = o.order_id AND e.event_type = 'delivered'))
+        <> (SELECT sum(gmv) FROM core.fact_orders)
+  # ---------------- warnings (reported, do not fail the run) ----------------
+  - name: warn.orphan_events_waiting_over_3_days
+    severity: warn
+    why: "events whose order header never arrived (expected: orders whose only header row was quarantined)"
+    sql: |
+      SELECT e.event_id FROM staging.order_events e
+      WHERE NOT EXISTS (SELECT 1 FROM staging.orders o WHERE o.order_id = e.order_id)
+        AND e.event_at < (SELECT max(event_at) FROM staging.order_events) - interval '3 days'
+  - name: warn.orders_on_unknown_merchant
+    severity: warn
+    sql: SELECT order_id FROM core.fact_orders WHERE merchant_key = -1
+  - name: warn.customers_still_inferred
+    severity: warn
+    sql: SELECT customer_id FROM core.dim_customer WHERE is_inferred AND customer_key > 0

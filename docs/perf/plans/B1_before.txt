@@ -1,0 +1,33 @@
+-- One month's GMV and orders by city (KPI / dashboard month filter) (before)
+-- SELECT city_key, count(*), sum(gmv) FROM perf.fact_orders_noidx WHERE created_date_key BETWEEN 20251101 AND 20251130 GROUP BY city_key
+
+Finalize GroupAggregate (actual time=20.180..21.737 rows=6.00 loops=1)
+  Group Key: city_key
+  Buffers: shared hit=8636 read=15124 written=764
+  I/O Timings: shared read=2.563 write=1.480
+  ->  Gather Merge (actual time=20.176..21.729 rows=18.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=8636 read=15124 written=764
+        I/O Timings: shared read=2.563 write=1.480
+        ->  Sort (actual time=18.903..18.904 rows=6.00 loops=3)
+              Sort Key: city_key
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=8636 read=15124 written=764
+              I/O Timings: shared read=2.563 write=1.480
+              Worker 0:  Sort Method: quicksort  Memory: 25kB
+              Worker 1:  Sort Method: quicksort  Memory: 25kB
+              ->  Partial HashAggregate (actual time=18.891..18.892 rows=6.00 loops=3)
+                    Group Key: city_key
+                    Batches: 1  Memory Usage: 32kB
+                    Buffers: shared hit=8620 read=15124 written=764
+                    I/O Timings: shared read=2.563 write=1.480
+                    Worker 0:  Batches: 1  Memory Usage: 32kB
+                    Worker 1:  Batches: 1  Memory Usage: 32kB
+                    ->  Parallel Seq Scan on fact_orders_noidx (actual time=0.104..16.892 rows=18120.33 loops=3)
+                          Filter: ((created_date_key >= 20251101) AND (created_date_key <= 20251130))
+                          Rows Removed by Filter: 248529
+                          Buffers: shared hit=8620 read=15124 written=764
+                          I/O Timings: shared read=2.563 write=1.480
+Planning Time: 0.037 ms
+Execution Time: 21.766 ms

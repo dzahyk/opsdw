@@ -1,0 +1,11 @@
+-- Customer order history, latest 20 orders (customer 360 / support lookup) (after)
+-- SELECT order_id, created_at, order_status, gmv FROM core.fact_orders WHERE customer_key = 14705 ORDER BY created_at DESC LIMIT 20
+
+Limit (actual time=0.008..0.016 rows=20.00 loops=1)
+  Buffers: shared hit=23
+  ->  Index Scan Backward using ix_fact_orders_customer_time on fact_orders (actual time=0.008..0.015 rows=20.00 loops=1)
+        Index Cond: (customer_key = 14705)
+        Index Searches: 1
+        Buffers: shared hit=23
+Planning Time: 0.012 ms
+Execution Time: 0.020 ms

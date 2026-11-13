@@ -1,0 +1,26 @@
+-- Hourly delivered events in a 7-day window (ops monitoring) (before)
+-- SELECT date_trunc('hour', event_at) AS h, count(*) FROM perf.fact_order_events_heap WHERE event_type = 'delivered' AND event_at >= '2025-06-01 00:00+07' AND event_at < '2025-06-08 00:00+07' GROUP BY 1 ORDER BY 1
+
+GroupAggregate (actual time=40.994..42.859 rows=168.00 loops=1)
+  Group Key: (date_trunc('hour'::text, event_at))
+  Buffers: shared hit=7718 read=28266 written=864
+  I/O Timings: shared read=1.016 write=1.690
+  ->  Gather Merge (actual time=40.989..42.430 rows=9487.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=7718 read=28266 written=864
+        I/O Timings: shared read=1.016 write=1.690
+        ->  Sort (actual time=39.747..39.844 rows=3162.33 loops=3)
+              Sort Key: (date_trunc('hour'::text, event_at))
+              Sort Method: quicksort  Memory: 97kB
+              Buffers: shared hit=7718 read=28266 written=864
+              I/O Timings: shared read=1.016 write=1.690
+              Worker 0:  Sort Method: quicksort  Memory: 97kB
+              Worker 1:  Sort Method: quicksort  Memory: 97kB
+              ->  Parallel Seq Scan on fact_order_events_heap (actual time=21.264..39.518 rows=3162.33 loops=3)
+                    Filter: ((event_at >= '2025-06-01 00:00:00+07'::timestamp with time zone) AND (event_at < '2025-06-08 00:00:00+07'::timestamp with time zone) AND (event_type = 'delivered'::text))
+                    Rows Removed by Filter: 1191077
+                    Buffers: shared hit=7638 read=28266 written=864
+                    I/O Timings: shared read=1.016 write=1.690
+Planning Time: 0.042 ms
+Execution Time: 42.881 ms

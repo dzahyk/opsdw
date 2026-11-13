@@ -1,0 +1,14 @@
+name: CI
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Rebuild the dev warehouse and run every check
+        run: ./scripts/ci.sh

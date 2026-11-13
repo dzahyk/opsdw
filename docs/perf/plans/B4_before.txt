@@ -1,0 +1,25 @@
+-- One courier's active days in a quarter (gaps-and-islands input) (before)
+-- SELECT DISTINCT event_date_key FROM perf.fact_order_events_heap WHERE courier_key = 10 AND event_date_key BETWEEN 20250701 AND 20250930
+
+Unique (actual time=48.245..50.146 rows=55.00 loops=1)
+  Buffers: shared hit=15492 read=20490 written=764
+  I/O Timings: shared read=1.434 write=1.385
+  ->  Gather Merge (actual time=48.244..50.115 rows=681.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=15492 read=20490 written=764
+        I/O Timings: shared read=1.434 write=1.385
+        ->  Sort (actual time=47.079..47.086 rows=227.00 loops=3)
+              Sort Key: event_date_key
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=15492 read=20490 written=764
+              I/O Timings: shared read=1.434 write=1.385
+              Worker 0:  Sort Method: quicksort  Memory: 25kB
+              Worker 1:  Sort Method: quicksort  Memory: 25kB
+              ->  Parallel Seq Scan on fact_order_events_heap (actual time=29.101..47.015 rows=227.00 loops=3)
+                    Filter: ((event_date_key >= 20250701) AND (event_date_key <= 20250930) AND (courier_key = 10))
+                    Rows Removed by Filter: 1194012
+                    Buffers: shared hit=15414 read=20490 written=764
+                    I/O Timings: shared read=1.434 write=1.385
+Planning Time: 0.036 ms
+Execution Time: 50.160 ms

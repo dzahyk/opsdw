@@ -1,0 +1,278 @@
+{
+  "measured_at": "2026-11-12T08:39:15+00:00",
+  "repeats": 7,
+  "params": {
+    "customer_key": 14705,
+    "courier_key": 10
+  },
+  "env": {
+    "postgres": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+    "shared_buffers": "512MB",
+    "work_mem": "32MB",
+    "jit": "on",
+    "max_parallel_workers_per_gather": "2",
+    "rows": {
+      "core.fact_orders": 799947,
+      "core.fact_order_events": 3582717,
+      "core.dim_customer": 87653,
+      "core.dim_merchant": 3857,
+      "mart.city_daily": 4384
+    },
+    "sizes": {
+      "core.fact_orders": "264 MB",
+      "perf.fact_orders_noidx": "186 MB",
+      "perf.fact_order_events_heap": "281 MB",
+      "mart.city_daily": "528 kB"
+    },
+    "events_partitioned_size": "641 MB",
+    "index_sizes": [
+      [
+        "fact_order_events",
+        "fact_order_events_<partition>_courier_key_event_date_key_idx",
+        49,
+        10919936,
+        "10 MB"
+      ],
+      [
+        "fact_order_events",
+        "fact_order_events_<partition>_event_type_event_at_idx",
+        49,
+        175644672,
+        "168 MB"
+      ],
+      [
+        "fact_order_events",
+        "fact_order_events_<partition>_pkey",
+        49,
+        190234624,
+        "181 MB"
+      ],
+      [
+        "fact_orders",
+        "fact_orders_pkey",
+        1,
+        32980992,
+        "31 MB"
+      ],
+      [
+        "fact_orders",
+        "ix_fact_orders_created_date",
+        1,
+        7643136,
+        "7464 kB"
+      ],
+      [
+        "fact_orders",
+        "ix_fact_orders_customer_time",
+        1,
+        34160640,
+        "33 MB"
+      ],
+      [
+        "fact_orders",
+        "ix_fact_orders_merchant_id",
+        1,
+        7413760,
+        "7240 kB"
+      ]
+    ],
+    "docker_host": "4 CPUs, 6197379072 bytes RAM, Ubuntu 24.04.4 LTS"
+  },
+  "results": [
+    {
+      "id": "B1",
+      "title": "One month's GMV and orders by city (KPI / dashboard month filter)",
+      "design": "B-tree index on fact_orders(created_date_key)",
+      "before": {
+        "exec_ms": 21.567,
+        "plan_ms": 0.043,
+        "hit": 5180,
+        "read": 18580,
+        "median_exec_ms": 21.567,
+        "all_exec_ms": [
+          20.746,
+          25.968,
+          21.168,
+          21.567,
+          21.358,
+          24.272,
+          22.018
+        ]
+      },
+      "after": {
+        "exec_ms": 11.331,
+        "plan_ms": 0.03,
+        "hit": 6945,
+        "read": 0,
+        "median_exec_ms": 11.331,
+        "all_exec_ms": [
+          12.534,
+          11.743,
+          11.331,
+          11.17,
+          10.965,
+          11.259,
+          11.953
+        ]
+      },
+      "before_sql": "SELECT city_key, count(*), sum(gmv) FROM perf.fact_orders_noidx WHERE created_date_key BETWEEN 20251101 AND 20251130 GROUP BY city_key",
+      "after_sql": "SELECT city_key, count(*), sum(gmv) FROM core.fact_orders WHERE created_date_key BETWEEN 20251101 AND 20251130 GROUP BY city_key"
+    },
+    {
+      "id": "B2",
+      "title": "Customer order history, latest 20 orders (customer 360 / support lookup)",
+      "design": "Composite index on fact_orders(customer_key, created_at)",
+      "before": {
+        "exec_ms": 22.996,
+        "plan_ms": 0.033,
+        "hit": 13884,
+        "read": 9940,
+        "median_exec_ms": 22.996,
+        "all_exec_ms": [
+          20.277,
+          21.147,
+          22.735,
+          23.102,
+          22.996,
+          23.415,
+          23.441
+        ]
+      },
+      "after": {
+        "exec_ms": 0.02,
+        "plan_ms": 0.013,
+        "hit": 23,
+        "read": 0,
+        "median_exec_ms": 0.02,
+        "all_exec_ms": [
+          0.022,
+          0.02,
+          0.021,
+          0.019,
+          0.023,
+          0.02,
+          0.02
+        ]
+      },
+      "before_sql": "SELECT order_id, created_at, order_status, gmv FROM perf.fact_orders_noidx WHERE customer_key = 14705 ORDER BY created_at DESC LIMIT 20",
+      "after_sql": "SELECT order_id, created_at, order_status, gmv FROM core.fact_orders WHERE customer_key = 14705 ORDER BY created_at DESC LIMIT 20"
+    },
+    {
+      "id": "B3",
+      "title": "Hourly delivered events in a 7-day window (ops monitoring)",
+      "design": "Monthly range partitions on event_at (pruning) + index (event_type, event_at)",
+      "before": {
+        "exec_ms": 44.823,
+        "plan_ms": 0.039,
+        "hit": 4262,
+        "read": 31722,
+        "median_exec_ms": 44.823,
+        "all_exec_ms": [
+          45.195,
+          41.544,
+          40.183,
+          44.823,
+          40.278,
+          62.669,
+          46.556
+        ]
+      },
+      "after": {
+        "exec_ms": 1.675,
+        "plan_ms": 0.059,
+        "hit": 63,
+        "read": 0,
+        "median_exec_ms": 1.675,
+        "all_exec_ms": [
+          1.675,
+          1.67,
+          1.699,
+          1.654,
+          1.681,
+          1.699,
+          1.674
+        ]
+      },
+      "before_sql": "SELECT date_trunc('hour', event_at) AS h, count(*) FROM perf.fact_order_events_heap WHERE event_type = 'delivered' AND event_at >= '2025-06-01 00:00+07' AND event_at < '2025-06-08 00:00+07' GROUP BY 1 ORDER BY 1",
+      "after_sql": "SELECT date_trunc('hour', event_at) AS h, count(*) FROM core.fact_order_events WHERE event_type = 'delivered' AND event_at >= '2025-06-01 00:00+07' AND event_at < '2025-06-08 00:00+07' GROUP BY 1 ORDER BY 1"
+    },
+    {
+      "id": "B4",
+      "title": "One courier's active days in a quarter (gaps-and-islands input)",
+      "design": "Partial index on fact_order_events(courier_key, event_date_key) WHERE courier_key IS NOT NULL",
+      "before": {
+        "exec_ms": 48.353,
+        "plan_ms": 0.038,
+        "hit": 14628,
+        "read": 21354,
+        "median_exec_ms": 48.353,
+        "all_exec_ms": [
+          45.663,
+          52.125,
+          47.511,
+          47.104,
+          49.139,
+          49.947,
+          48.353
+        ]
+      },
+      "after": {
+        "exec_ms": 0.326,
+        "plan_ms": 0.476,
+        "hit": 52,
+        "read": 0,
+        "median_exec_ms": 0.326,
+        "all_exec_ms": [
+          0.335,
+          0.326,
+          0.31,
+          0.332,
+          0.31,
+          0.348,
+          0.312
+        ]
+      },
+      "before_sql": "SELECT DISTINCT event_date_key FROM perf.fact_order_events_heap WHERE courier_key = 10 AND event_date_key BETWEEN 20250701 AND 20250930",
+      "after_sql": "SELECT DISTINCT event_date_key FROM core.fact_order_events WHERE courier_key = 10 AND event_date_key BETWEEN 20250701 AND 20250930"
+    },
+    {
+      "id": "B5",
+      "title": "24-month GMV / completion trend for all cities (dashboard landing view)",
+      "design": "Pre-aggregated periodic snapshot mart.city_daily instead of scanning the fact",
+      "before": {
+        "exec_ms": 75.853,
+        "plan_ms": 0.071,
+        "hit": 19048,
+        "read": 4756,
+        "median_exec_ms": 75.853,
+        "all_exec_ms": [
+          73.874,
+          75.853,
+          78.274,
+          76.372,
+          103.515,
+          74.306,
+          75.734
+        ]
+      },
+      "after": {
+        "exec_ms": 1.074,
+        "plan_ms": 0.039,
+        "hit": 55,
+        "read": 0,
+        "median_exec_ms": 1.074,
+        "all_exec_ms": [
+          1.083,
+          1.074,
+          1.219,
+          1.072,
+          1.061,
+          1.144,
+          1.058
+        ]
+      },
+      "before_sql": "SELECT d.year_month, count(*), count(*) FILTER (WHERE f.is_delivered), sum(f.gmv) FROM perf.fact_orders_noidx f JOIN core.dim_date d ON d.date_key = f.created_date_key GROUP BY d.year_month ORDER BY 1",
+      "after_sql": "SELECT d.year_month, sum(m.orders_created), sum(m.orders_delivered), sum(m.gmv) FROM mart.city_daily m JOIN core.dim_date d ON d.date_key = m.date_key GROUP BY d.year_month ORDER BY 1"
+    }
+  ]
+}

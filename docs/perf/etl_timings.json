@@ -1,0 +1,201 @@
+{
+  "initial": {
+    "batches": 721,
+    "ingest_s": 22.9,
+    "raw_rows": 4401394,
+    "transform_s": 93.253,
+    "steps_s": {
+      "10_stage_customers": 0.903,
+      "11_stage_merchants": 0.039,
+      "12_stage_couriers": 0.008,
+      "13_stage_orders": 10.141,
+      "14_stage_order_events": 35.396,
+      "20_dim_customer": 0.536,
+      "21_dim_courier": 0.006,
+      "22_dim_merchant_scd2": 0.071,
+      "25_inferred_members": 1.763,
+      "30_fact_order_events": 30.752,
+      "31_fact_orders": 11.567,
+      "40_mart_city_daily": 0.21
+    }
+  },
+  "incremental": [
+    {
+      "batch": "2025-12-22",
+      "raw_rows": 10476,
+      "ingest_s": 0.06,
+      "transform_s": 3.455,
+      "affected_orders": 2526
+    },
+    {
+      "batch": "2025-12-23",
+      "raw_rows": 10391,
+      "ingest_s": 0.05,
+      "transform_s": 2.094,
+      "affected_orders": 2496
+    },
+    {
+      "batch": "2025-12-24",
+      "raw_rows": 10290,
+      "ingest_s": 0.05,
+      "transform_s": 2.284,
+      "affected_orders": 3995
+    },
+    {
+      "batch": "2025-12-25",
+      "raw_rows": 10531,
+      "ingest_s": 0.06,
+      "transform_s": 2.219,
+      "affected_orders": 3076
+    },
+    {
+      "batch": "2025-12-26",
+      "raw_rows": 10429,
+      "ingest_s": 0.04,
+      "transform_s": 2.004,
+      "affected_orders": 2662
+    },
+    {
+      "batch": "2025-12-27",
+      "raw_rows": 10702,
+      "ingest_s": 0.05,
+      "transform_s": 2.116,
+      "affected_orders": 3276
+    },
+    {
+      "batch": "2025-12-28",
+      "raw_rows": 10627,
+      "ingest_s": 0.05,
+      "transform_s": 2.181,
+      "affected_orders": 4086
+    },
+    {
+      "batch": "2025-12-29",
+      "raw_rows": 10459,
+      "ingest_s": 0.05,
+      "transform_s": 2.074,
+      "affected_orders": 2693
+    },
+    {
+      "batch": "2025-12-30",
+      "raw_rows": 10563,
+      "ingest_s": 0.06,
+      "transform_s": 2.168,
+      "affected_orders": 3291
+    },
+    {
+      "batch": "2025-12-31",
+      "raw_rows": 10410,
+      "ingest_s": 0.05,
+      "transform_s": 2.05,
+      "affected_orders": 3015
+    },
+    {
+      "batch": "2026-01-01",
+      "raw_rows": 515,
+      "ingest_s": 0.03,
+      "transform_s": 0.652,
+      "affected_orders": 459
+    },
+    {
+      "batch": "2026-01-02",
+      "raw_rows": 185,
+      "ingest_s": 0.03,
+      "transform_s": 0.478,
+      "affected_orders": 159
+    },
+    {
+      "batch": "2026-01-03",
+      "raw_rows": 126,
+      "ingest_s": 0.02,
+      "transform_s": 0.545,
+      "affected_orders": 117
+    },
+    {
+      "batch": "2026-01-04",
+      "raw_rows": 84,
+      "ingest_s": 0.02,
+      "transform_s": 0.538,
+      "affected_orders": 83
+    },
+    {
+      "batch": "2026-01-05",
+      "raw_rows": 47,
+      "ingest_s": 0.03,
+      "transform_s": 0.43,
+      "affected_orders": 41
+    },
+    {
+      "batch": "2026-01-06",
+      "raw_rows": 12,
+      "ingest_s": 0.02,
+      "transform_s": 0.468,
+      "affected_orders": 11
+    },
+    {
+      "batch": "2026-01-07",
+      "raw_rows": 15,
+      "ingest_s": 0.02,
+      "transform_s": 0.552,
+      "affected_orders": 103
+    },
+    {
+      "batch": "2026-01-08",
+      "raw_rows": 5,
+      "ingest_s": 0.02,
+      "transform_s": 0.173,
+      "affected_orders": 2
+    },
+    {
+      "batch": "2026-01-09",
+      "raw_rows": 6,
+      "ingest_s": 0.02,
+      "transform_s": 0.284,
+      "affected_orders": 189
+    },
+    {
+      "batch": "2026-01-10",
+      "raw_rows": 1,
+      "ingest_s": 0.03,
+      "transform_s": 0.068,
+      "affected_orders": 1
+    },
+    {
+      "batch": "2026-01-11",
+      "raw_rows": 1,
+      "ingest_s": 0.02,
+      "transform_s": 0.549,
+      "affected_orders": 874
+    },
+    {
+      "batch": "2026-01-12",
+      "raw_rows": 1,
+      "ingest_s": 0.03,
+      "transform_s": 0.071,
+      "affected_orders": 0
+    },
+    {
+      "batch": "2026-01-13",
+      "raw_rows": 1,
+      "ingest_s": 0.02,
+      "transform_s": 0.273,
+      "affected_orders": 89
+    },
+    {
+      "batch": "2026-01-15",
+      "raw_rows": 1,
+      "ingest_s": 0.03,
+      "transform_s": 0.229,
+      "affected_orders": 22
+    },
+    {
+      "batch": "2026-01-17",
+      "raw_rows": 1,
+      "ingest_s": 0.02,
+      "transform_s": 0.278,
+      "affected_orders": 123
+    }
+  ],
+  "noop_rerun_s": 0.085,
+  "full_refresh_s": 92.541
+}

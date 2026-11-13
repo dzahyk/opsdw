@@ -1,0 +1,25 @@
+-- 24-month GMV / completion trend for all cities (dashboard landing view) (after)
+-- SELECT d.year_month, sum(m.orders_created), sum(m.orders_delivered), sum(m.gmv) FROM mart.city_daily m JOIN core.dim_date d ON d.date_key = m.date_key GROUP BY d.year_month ORDER BY 1
+
+Sort (actual time=1.045..1.046 rows=24.00 loops=1)
+  Sort Key: d.year_month
+  Sort Method: quicksort  Memory: 26kB
+  Buffers: shared hit=55
+  ->  HashAggregate (actual time=1.036..1.039 rows=24.00 loops=1)
+        Group Key: d.year_month
+        Batches: 1  Memory Usage: 32kB
+        Buffers: shared hit=55
+        ->  Hash Join (actual time=0.140..0.655 rows=4384.00 loops=1)
+              Hash Cond: (m.date_key = d.date_key)
+              Buffers: shared hit=55
+              ->  Seq Scan on city_daily m (actual time=0.002..0.123 rows=4384.00 loops=1)
+                    Buffers: shared hit=41
+              ->  Hash (actual time=0.134..0.134 rows=1461.00 loops=1)
+                    Buckets: 2048  Batches: 1  Memory Usage: 79kB
+                    Buffers: shared hit=14
+                    ->  Seq Scan on dim_date d (actual time=0.001..0.058 rows=1461.00 loops=1)
+                          Buffers: shared hit=14
+Planning:
+  Buffers: shared hit=6
+Planning Time: 0.042 ms
+Execution Time: 1.061 ms

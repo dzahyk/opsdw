@@ -1,0 +1,17 @@
+-- One month's GMV and orders by city (KPI / dashboard month filter) (after)
+-- SELECT city_key, count(*), sum(gmv) FROM core.fact_orders WHERE created_date_key BETWEEN 20251101 AND 20251130 GROUP BY city_key
+
+HashAggregate (actual time=11.459..11.460 rows=6.00 loops=1)
+  Group Key: city_key
+  Batches: 1  Memory Usage: 32kB
+  Buffers: shared hit=6945
+  ->  Bitmap Heap Scan on fact_orders (actual time=1.633..5.565 rows=54361.00 loops=1)
+        Recheck Cond: ((created_date_key >= 20251101) AND (created_date_key <= 20251130))
+        Heap Blocks: exact=6883
+        Buffers: shared hit=6945
+        ->  Bitmap Index Scan on ix_fact_orders_created_date (actual time=1.206..1.206 rows=54361.00 loops=1)
+              Index Cond: ((created_date_key >= 20251101) AND (created_date_key <= 20251130))
+              Index Searches: 1
+              Buffers: shared hit=62
+Planning Time: 0.043 ms
+Execution Time: 11.488 ms
