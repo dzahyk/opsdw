@@ -1,4 +1,4 @@
-# Operational Analytics Engineering — a verifiable vertical slice
+# OpsDW — Operational Analytics Engineering, a verifiable vertical slice
 
 A small but complete warehouse for a **fictional** on-demand delivery platform, built to show
 advanced SQL and analytical data modelling end to end: landing files → raw → staging → star schema
@@ -12,12 +12,13 @@ measured query performance and an automated KPI reconciliation.
 ## What it does, and how
 
 The problem: SQL, a BI model and a dashboard can each report a *different* number for the same KPI. OpsDW builds the
-warehouse behind a delivery platform and then **proves that SQL, the BI model and the dashboard all report the same
-number**, cell by cell.
+warehouse behind a delivery platform and then **proves that SQL, the BI model's measure logic and the dashboard all
+report the same number**, cell by cell (the DAX measures are checked through their SQL translation on the `bi.*` views;
+the DAX itself is not run here).
 
 <table>
 <tr>
-<td width="50%"><img src="docs/screenshots/dashboard.webp" alt="Delivery operations KPI dashboard"><br><sub><b>KPI dashboard.</b> Eleven KPIs with city and month filters. Every value is checked against the canonical KPI SQL.</sub></td>
+<td width="50%"><img src="docs/screenshots/dashboard.webp" alt="Delivery operations KPI dashboard"><br><sub><b>KPI dashboard</b> (dev dataset, 24,479 orders). Eight headline tiles and trend charts with city and month filters; all eleven KPIs are in the table view. Every value is checked against the canonical KPI SQL.</sub></td>
 <td width="50%"><img src="docs/screenshots/kpi-table.webp" alt="Table view of all KPIs by month"><br><sub><b>Table view.</b> Every value on the page as a table, with definitions in <code>docs/KPI_DICTIONARY.md</code>.</sub></td>
 </tr>
 </table>
@@ -28,7 +29,7 @@ number**, cell by cell.
 | **Incremental, idempotent ETL** | Loads only new or changed rows, including late and out-of-order ones. | A watermark on the raw ingest id and a `MERGE`; the merge and the new watermark commit in one transaction, so a crash rolls back cleanly. 53 incremental runs equal one full rebuild. |
 | **Star schema with history** | Keeps history where it changes money: a merchant's commission tier is the one valid when the order was placed. | Conformed dimensions, a type-2 slowly changing dimension, an accumulating snapshot, and a monthly-partitioned transaction fact. |
 | **Data-quality gate** | Stops the pipeline when the data is wrong. | 43 checks: uniqueness, not-null, referential integrity, accepted values, business rules, history integrity, freshness, and row and sum reconciliation between layers. Ten sabotage tests break the data on purpose and the gate must fail each time. |
-| **One definition per KPI** | Eleven KPIs, each with its question, numerator, denominator, grain, filters and caveats. | Defined once in `kpis/kpis.yml`, then computed by the canonical SQL, a Power BI-ready model and the dashboard. |
+| **One definition per KPI** | Eleven KPIs, each with its question, numerator, denominator, grain, filters and caveats. | Defined once in `kpis/kpis.yml`, then computed by the canonical SQL, a Power BI-ready model (DAX checked via its SQL translation) and the dashboard. |
 | **Reconciliation** | Shows the three places agree. | A command compares every month and city cell: 1,848 cells, 0 mismatches. Tests confirm the check catches a wrong roll-up, such as averaging city percentiles. |
 | **18 analytical queries** | Cohorts, funnel, retention, rolling windows, percentiles, RFM, Pareto, SCD2 point-in-time. | Each query is tested against a hand-derived expected result ([docs/ANALYTICS_QUERIES.md](docs/ANALYTICS_QUERIES.md)). |
 | **Measured performance** | Shows what each index or partition buys. | `EXPLAIN (ANALYZE, BUFFERS)` before and after on 800,100 orders, median of seven runs ([docs/perf/RESULTS.md](docs/perf/RESULTS.md)). It also exposed a load step that turned quadratic at that volume, now rewritten as joins. |
@@ -49,6 +50,10 @@ number**, cell by cell.
 | Reconciliation sheet: canonical SQL = DAX-equivalent SQL on the BI views = dashboard, per month × city | `opsdw reconcile`, [`docs/RECONCILIATION.md`](docs/RECONCILIATION.md) | implemented, tested (incl. tests that it catches wrong roll-ups) |
 | Lightweight dashboard (static HTML, data embedded, city/month filters, table view, light/dark) | `dashboard/`, `opsdw dashboard` | implemented, checked in a browser |
 | `.pbix` / `.pbip` Power BI file | — | **not done** (see Limitations) |
+
+Terms used above: **SCD2** keeps every past version of a row with its valid-from and valid-to dates; the
+**watermark** is the last raw ingest id already loaded; an **accumulating snapshot** has one row per order, updated as
+the order moves through its stages. Details in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Quick start
 
@@ -98,7 +103,8 @@ psql "host=127.0.0.1 port=55462 user=opsdw password=opsdw_local_only dbname=opsd
 ## Headline results (committed run, 2026-11-12, `make bench`)
 
 Documented volume: `--scale bench --seed 42` → 800,100 orders, 3,583,406 unique order events,
-4,507,273 raw landed rows (incl. injected duplicates/corruptions) over 2024-01-01..2025-12-31.
+4,507,273 raw landed rows (4,401,394 initial + 105,879 incremental; incl. injected duplicates/corruptions)
+over 2024-01-01..2025-12-31.
 Machine: Colima VM, 4 vCPU / 5.8 GiB, Apple M4, PostgreSQL 18.6. Synthetic data.
 
 | Check | Result |
@@ -106,7 +112,7 @@ Machine: Colima VM, 4 vCPU / 5.8 GiB, Apple M4, PostgreSQL 18.6. Synthetic data.
 | Data-quality gate on bench data | 43 checks: 42 pass, 1 expected warning (680 events of the 153 orders whose header only ever arrived corrupted), 0 fail |
 | Pipeline vs generator ground truth (bench) | 799,947 fact orders = 800,100 − 153 corrupt-only; 3,857 merchant SCD2 rows = 3,000 + 856 tier changes + 1 unknown member |
 | KPI reconciliation (11 KPIs × 24 months × 6 cities + ALL) | 1,848 cells, **0 mismatches** between canonical SQL, DAX-equivalent SQL on `bi.*`, and the built dashboard |
-| Initial load | 4.40M raw rows: ingest 22.9 s, transform 93.3 s (single transaction); full refresh 92.5 s |
+| Initial load | first 721 daily batches, 4.40M of the 4.51M raw rows (the remaining ~106k arrive in the incremental runs below): ingest 22.9 s, transform 93.3 s (single transaction); full refresh 92.5 s |
 | Daily incremental run | ~10.5k raw rows/day → 2.0–3.5 s transform, 2.5–4k orders recomputed; no-op re-run 0.09 s |
 
 | Benchmark (median of 7, warm cache) | Before | After | Design |
@@ -165,8 +171,9 @@ watermarks in the same commit. Details and design rationale: [`docs/ARCHITECTURE
 
 ## Independent review
 
-After the build, a separate reviewer read the code cold. Fixed as a result: `pg_input_is_valid()`
-accepted `'NaN'` amounts and `'infinity'`/`'now'`/`'epoch'` timestamps (would poison GMV or abort
+After the build, a separate review pass (a fresh Claude Code review agent that got the code and a short brief, not the
+build conversation or its conclusions) read the code cold and checked suspicions with read-only queries.
+Fixed as a result: `pg_input_is_valid()` accepted `'NaN'` amounts and `'infinity'`/`'now'`/`'epoch'` timestamps (would poison GMV or abort
 every run) → strict validators; versions with equal `updated_at` resolved differently
 incrementally vs on rebuild → `(updated_at, _ingest_id)` tie-break; the watermark assumed one
 ingester → now enforced by an advisory lock; a wrong take-rate caveat; NTILE splitting tied
@@ -182,7 +189,7 @@ Built as a portfolio project. Case study with the reasoning and the limits: <htt
 | Contributor | Role | Responsibility |
 |---|---|---|
 | **Daffa Zahy Khairy** ([@dzahyk](https://github.com/dzahyk)) | Author, data modeller, reviewer | The KPI definitions; the data model and SQL design; the data-quality rules; the expected results the tests check against, including the hand-derived answers for the 18 queries; reviewing and verifying every result. |
-| **Claude** (Anthropic), used through Claude Code | Implementation assistant | Writing the implementation to the specifications and expected results I defined, and drafting tests for my review. It decides nothing about definitions, rules or what counts as correct. |
+| **Claude** (Anthropic), used through Claude Code | Implementation and review assistant | Writing the implementation to the specifications and expected results I defined, and drafting tests for my review; a separate review pass on the finished code (see Independent review). It decides nothing about definitions, rules or what counts as correct. |
 
 **How AI is used here.** AI speeds up the typing so that my effort goes to the parts that decide whether the numbers can
 be trusted: what each KPI means, what the data model must preserve, and what a correct answer is. The expected values come

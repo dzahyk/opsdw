@@ -1,5 +1,5 @@
-# Local-only warehouse. Host port 55462 is deliberately offset: 55432/55442 are
-# used by other local stacks on this machine. Override with OPSDW_PG_PORT.
+# Local-only warehouse. Host port defaults to 55462 (not 5432) to avoid clashing
+# with other local Postgres instances; override with OPSDW_PG_PORT.
 name: opsdw
 services:
   postgres:
