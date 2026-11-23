@@ -175,9 +175,19 @@ Each fix has a regression test. Remaining known DAX nuances are listed in `power
 
 ## About this repository
 
-Built by Daffa Zahy Khairy as a portfolio project. I defined the KPIs, the data model, the data-quality rules and the
-expected results the tests check against; the implementation was written with AI coding agents under my direction.
-Case study with the reasoning and the limits: <https://dzahyk.github.io/case-opsdw.html>.
+Built as a portfolio project. Case study with the reasoning and the limits: <https://dzahyk.github.io/case-opsdw.html>.
+
+### Contributors
+
+| Contributor | Role | Responsibility |
+|---|---|---|
+| **Daffa Zahy Khairy** ([@dzahyk](https://github.com/dzahyk)) | Author, data modeller, reviewer | The KPI definitions; the data model and SQL design; the data-quality rules; the expected results the tests check against, including the hand-derived answers for the 18 queries; reviewing and verifying every result. |
+| **Claude** (Anthropic), used through Claude Code | Implementation assistant | Writing the implementation to the specifications and expected results I defined, and drafting tests for my review. It decides nothing about definitions, rules or what counts as correct. |
+
+**How AI is used here.** AI speeds up the typing so that my effort goes to the parts that decide whether the numbers can
+be trusted: what each KPI means, what the data model must preserve, and what a correct answer is. The expected values come
+from me, not from the assistant, and the 43 checks, 54 tests and the 1,848-cell reconciliation decide whether a change is
+accepted.
 
 Every number in this README can be reproduced with the commands above; `scripts/ci.sh` (also run by GitHub Actions on
 every push) rebuilds the dev warehouse from scratch and fails on the first broken check.
