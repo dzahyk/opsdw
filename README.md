@@ -178,7 +178,7 @@ every run) → strict validators; versions with equal `updated_at` resolved diff
 incrementally vs on rebuild → `(updated_at, _ingest_id)` tie-break; the watermark assumed one
 ingester → now enforced by an advisory lock; a wrong take-rate caveat; NTILE splitting tied
 customers in RFM → `cume_dist` scoring; an inner join that could drop a late merchant in Q09.
-Each code fix has a regression test; the take-rate caveat was a documentation correction. Remaining known DAX nuances are listed in `powerbi/MODEL.md`.
+The validator, tie-break, advisory-lock and RFM fixes have regression tests; the Q09 join fix is covered by the query test but not by a late-merchant case yet, and the take-rate caveat was a documentation correction. Remaining known DAX nuances are listed in `powerbi/MODEL.md`.
 
 ## About this repository
 
