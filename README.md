@@ -9,6 +9,30 @@ measured query performance and an automated KPI reconciliation.
 > No number here is a business result of any real company. Numbers exist to prove the engineering
 > and are reproducible bit-for-bit from the commands below.
 
+## What it does, and how
+
+The problem: SQL, a BI model and a dashboard can each report a *different* number for the same KPI. OpsDW builds the
+warehouse behind a delivery platform and then **proves that SQL, the BI model and the dashboard all report the same
+number**, cell by cell.
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/dashboard.webp" alt="Delivery operations KPI dashboard"><br><sub><b>KPI dashboard.</b> Eleven KPIs with city and month filters. Every value is checked against the canonical KPI SQL.</sub></td>
+<td width="50%"><img src="docs/screenshots/kpi-table.webp" alt="Table view of all KPIs by month"><br><sub><b>Table view.</b> Every value on the page as a table, with definitions in <code>docs/KPI_DICTIONARY.md</code>.</sub></td>
+</tr>
+</table>
+
+| Feature | What it does | How it works |
+|---|---|---|
+| **Synthetic source with known defects** | Generates three source feeds with duplicates, late and corrupt rows, so every check has a known right answer. | A seeded generator logs every defect it injects; tests compare the warehouse against that log. |
+| **Incremental, idempotent ETL** | Loads only new or changed rows, including late and out-of-order ones. | A watermark on the raw ingest id and a `MERGE`; the merge and the new watermark commit in one transaction, so a crash rolls back cleanly. 53 incremental runs equal one full rebuild. |
+| **Star schema with history** | Keeps history where it changes money: a merchant's commission tier is the one valid when the order was placed. | Conformed dimensions, a type-2 slowly changing dimension, an accumulating snapshot, and a monthly-partitioned transaction fact. |
+| **Data-quality gate** | Stops the pipeline when the data is wrong. | 43 checks: uniqueness, not-null, referential integrity, accepted values, business rules, history integrity, freshness, and row and sum reconciliation between layers. Ten sabotage tests break the data on purpose and the gate must fail each time. |
+| **One definition per KPI** | Eleven KPIs, each with its question, numerator, denominator, grain, filters and caveats. | Defined once in `kpis/kpis.yml`, then computed by the canonical SQL, a Power BI-ready model and the dashboard. |
+| **Reconciliation** | Shows the three places agree. | A command compares every month and city cell: 1,848 cells, 0 mismatches. Tests confirm the check catches a wrong roll-up, such as averaging city percentiles. |
+| **18 analytical queries** | Cohorts, funnel, retention, rolling windows, percentiles, RFM, Pareto, SCD2 point-in-time. | Each query is tested against a hand-derived expected result ([docs/ANALYTICS_QUERIES.md](docs/ANALYTICS_QUERIES.md)). |
+| **Measured performance** | Shows what each index or partition buys. | `EXPLAIN (ANALYZE, BUFFERS)` before and after on 800,100 orders, median of seven runs ([docs/perf/RESULTS.md](docs/perf/RESULTS.md)). It also exposed a load step that turned quadratic at that volume, now rewritten as joins. |
+
 ## What is in the box
 
 | Deliverable | Where | Status |
